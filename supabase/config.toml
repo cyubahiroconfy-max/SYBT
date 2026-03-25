@@ -1,6 +1,1 @@
 project_id = "duppugnarxckinllwkja"
-
-[auth]
-site_url = "https://lovable.dev"
-enabled = true
-auto_confirm = true
