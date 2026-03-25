@@ -1,1 +1,7 @@
 project_id = "duppugnarxckinllwkja"
+
+[auth]
+site_url = "https://id-preview--20f85894-1fe8-4628-92cc-f1cbc3d01c0a.lovable.app"
+
+[auth.email]
+enable_confirmations = false
