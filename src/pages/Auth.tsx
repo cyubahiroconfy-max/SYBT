@@ -44,7 +44,7 @@ const Auth = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else if (mode === "signup") {
-      toast({ title: "Account created! 🎉", description: "Check your email to verify your account." });
+      toast({ title: "Account created! 🎉", description: "You can now sign in with your credentials." });
     }
   };
 
