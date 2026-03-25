@@ -37,7 +37,12 @@ const Index = () => {
               </p>
             </div>
           </motion.div>
-          <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+          <div className="flex items-center gap-2">
+            <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+            <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/20">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
