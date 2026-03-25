@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, LogOut } from "lucide-react";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import { BudgetSummary } from "@/components/BudgetSummary";
 import { SetBudgetDialog } from "@/components/SetBudgetDialog";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
@@ -8,17 +10,10 @@ import { ExpenseList } from "@/components/ExpenseList";
 
 const Index = () => {
   const {
-    expenses,
-    budget,
-    totalSpent,
-    remaining,
-    percentUsed,
-    isOverBudget,
-    isNearBudget,
-    addExpense,
-    deleteExpense,
-    setBudget,
+    expenses, budget, totalSpent, remaining, percentUsed,
+    isOverBudget, isNearBudget, addExpense, deleteExpense, setBudget,
   } = useExpenses();
+  const { signOut, user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,7 +37,12 @@ const Index = () => {
               </p>
             </div>
           </motion.div>
-          <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+          <div className="flex items-center gap-2">
+            <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+            <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/20">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
