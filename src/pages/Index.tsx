@@ -1,8 +1,6 @@
 import { motion } from "framer-motion";
-import { GraduationCap, LogOut } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { useExpenses } from "@/hooks/useExpenses";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { BudgetSummary } from "@/components/BudgetSummary";
 import { SetBudgetDialog } from "@/components/SetBudgetDialog";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
