@@ -11,7 +11,7 @@ const Index = () => {
     expenses, budget, totalSpent, remaining, percentUsed,
     isOverBudget, isNearBudget, addExpense, deleteExpense, setBudget,
   } = useExpenses();
-  const { signOut, user } = useAuth();
+  
 
   return (
     <div className="min-h-screen bg-background">
