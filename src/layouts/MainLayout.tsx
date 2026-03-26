@@ -75,7 +75,17 @@ const MainLayout = () => {
               </p>
             </div>
           </motion.div>
-          <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+          <div className="flex items-center gap-2">
+            <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-primary-foreground hover:bg-primary-foreground/20"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
