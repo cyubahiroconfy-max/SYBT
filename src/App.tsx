@@ -4,7 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SavingsProvider } from "@/contexts/SavingsContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import MainLayout from "@/layouts/MainLayout";
+import AuthPage from "@/pages/AuthPage";
 import SavePage from "@/pages/SavePage";
 import SpendPage from "@/pages/SpendPage";
 import HistoryPage from "@/pages/HistoryPage";
@@ -18,16 +20,23 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SavingsProvider>
-          <Routes>
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<SavePage />} />
-              <Route path="/spend" element={<SpendPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </SavingsProvider>
+        <Routes>
+          <Route path="/auth" element={<AuthPage />} />
+          <Route
+            element={
+              <ProtectedRoute>
+                <SavingsProvider>
+                  <MainLayout />
+                </SavingsProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/" element={<SavePage />} />
+            <Route path="/spend" element={<SpendPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

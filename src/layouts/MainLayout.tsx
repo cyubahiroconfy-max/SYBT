@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { PiggyBank, Wallet, Receipt, Target, Sun, Moon } from "lucide-react";
+import { PiggyBank, Wallet, Receipt, Target, Sun, Moon, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { NavLink } from "@/components/NavLink";
 import { DashboardCards } from "@/components/DashboardCards";
 import { SavingsProgress } from "@/components/SavingsProgress";
@@ -16,6 +18,7 @@ function loadGoal() {
 }
 
 const MainLayout = () => {
+  const navigate = useNavigate();
   const {
     totalSaved, totalSpent, budget, lockedSavings, setBudget,
   } = useSavingsContext();
@@ -27,6 +30,12 @@ const MainLayout = () => {
   const toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
     setDark((d) => !d);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    navigate("/auth");
   };
 
   const handleSetGoal = () => {
@@ -66,7 +75,17 @@ const MainLayout = () => {
               </p>
             </div>
           </motion.div>
-          <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+          <div className="flex items-center gap-2">
+            <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-primary-foreground hover:bg-primary-foreground/20"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
