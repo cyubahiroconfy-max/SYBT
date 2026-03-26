@@ -1,8 +1,8 @@
 import { AddExpenseForm } from "@/components/AddExpenseForm";
-import { useSavings } from "@/hooks/useSavings";
+import { useSavingsContext } from "@/contexts/SavingsContext";
 
 const SpendPage = () => {
-  const { addExpense } = useSavings();
+  const { addExpense } = useSavingsContext();
 
   return (
     <div className="space-y-4">

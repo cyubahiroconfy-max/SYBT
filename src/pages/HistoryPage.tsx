@@ -1,8 +1,8 @@
 import { TransactionHistory } from "@/components/TransactionHistory";
-import { useSavings } from "@/hooks/useSavings";
+import { useSavingsContext } from "@/contexts/SavingsContext";
 
 const HistoryPage = () => {
-  const { savings, expenses } = useSavings();
+  const { savings, expenses } = useSavingsContext();
 
   return (
     <div>

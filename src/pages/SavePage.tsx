@@ -1,9 +1,9 @@
 import { SaveMoneyForm } from "@/components/SaveMoneyForm";
 import { SavingsLockList } from "@/components/SavingsLockList";
-import { useSavings } from "@/hooks/useSavings";
+import { useSavingsContext } from "@/contexts/SavingsContext";
 
 const SavePage = () => {
-  const { savings, addSaving, withdraw } = useSavings();
+  const { savings, addSaving, withdraw } = useSavingsContext();
 
   return (
     <div className="space-y-4">
