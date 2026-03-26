@@ -18,8 +18,10 @@ function loadGoal() {
 }
 
 const MainLayout = () => {
+  const navigate = useNavigate();
   const {
     totalSaved, totalSpent, budget, lockedSavings, setBudget,
+  } = useSavingsContext();
   } = useSavingsContext();
 
   const [goal, setGoal] = useState(loadGoal);
