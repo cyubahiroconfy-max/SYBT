@@ -32,6 +32,12 @@ const MainLayout = () => {
     setDark((d) => !d);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    navigate("/auth");
+  };
+
   const handleSetGoal = () => {
     const g = Number(goalInput);
     if (g > 0) {
