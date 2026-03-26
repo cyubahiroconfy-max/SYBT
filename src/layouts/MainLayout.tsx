@@ -22,7 +22,6 @@ const MainLayout = () => {
   const {
     totalSaved, totalSpent, budget, lockedSavings, setBudget,
   } = useSavingsContext();
-  } = useSavingsContext();
 
   const [goal, setGoal] = useState(loadGoal);
   const [goalInput, setGoalInput] = useState("");
