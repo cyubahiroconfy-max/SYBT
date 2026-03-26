@@ -10,6 +10,8 @@ interface Props {
   onSave: (amount: number, method: "MTN" | "Airtel", durationDays: number) => void;
 }
 
+const NO_LOCK = { label: "No Lock (Withdraw anytime)", days: 0 };
+
 const DURATIONS = [
   { label: "1 Day", days: 1 },
   { label: "3 Days", days: 3 },
@@ -32,20 +34,17 @@ export function SaveMoneyForm({ onSave }: Props) {
       toast({ title: "Enter a valid amount", variant: "destructive" });
       return;
     }
-    if (!duration) {
-      toast({ title: "Select a saving duration", variant: "destructive" });
-      return;
-    }
     setStep(2);
   };
 
   const handlePayment = (selectedMethod: "MTN" | "Airtel") => {
     const amt = Number(amount);
-    const days = Number(duration);
+    const days = Number(duration || "0");
     onSave(amt, selectedMethod, days);
+    const durLabel = days === 0 ? "No Lock" : DURATIONS.find(d => d.days === days)?.label || `${days} days`;
     toast({
       title: "💰 Saving Successful!",
-      description: `${amt.toLocaleString()} RWF saved via ${selectedMethod} for ${DURATIONS.find(d => d.days === days)?.label}`,
+      description: `${amt.toLocaleString()} RWF saved via ${selectedMethod}${days > 0 ? ` for ${durLabel}` : ""}`,
     });
     setAmount("");
     setMethod("");
@@ -79,12 +78,13 @@ export function SaveMoneyForm({ onSave }: Props) {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-1 block">Lock Duration</label>
+            <label className="text-sm font-medium text-muted-foreground mb-1 block">Lock Duration (Optional)</label>
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger>
-                <SelectValue placeholder="Select duration" />
+                <SelectValue placeholder="No lock (optional)" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="0">{NO_LOCK.label}</SelectItem>
                 {DURATIONS.map((d) => (
                   <SelectItem key={d.days} value={String(d.days)}>
                     {d.label}
