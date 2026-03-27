@@ -23,6 +23,7 @@ const MainLayout = () => {
   const {
     totalSaved, totalSpent, budget, lockedSavings, setBudget,
   } = useSavingsContext();
+  const { isAdmin } = useAdminCheck();
 
   const [goal, setGoal] = useState(loadGoal);
   const [goalInput, setGoalInput] = useState("");
@@ -77,6 +78,16 @@ const MainLayout = () => {
             </div>
           </motion.div>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/admin")}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Shield className="h-4 w-4" />
+              </Button>
+            )}
             <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
             <Button
               variant="ghost"
