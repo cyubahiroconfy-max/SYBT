@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { PiggyBank, Wallet, Receipt, Target, Sun, Moon, LogOut } from "lucide-react";
+import { PiggyBank, Wallet, Receipt, Target, Sun, Moon, LogOut, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavLink } from "@/components/NavLink";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { DashboardCards } from "@/components/DashboardCards";
 import { SavingsProgress } from "@/components/SavingsProgress";
 import { SetBudgetDialog } from "@/components/SetBudgetDialog";
@@ -22,6 +23,7 @@ const MainLayout = () => {
   const {
     totalSaved, totalSpent, budget, lockedSavings, setBudget,
   } = useSavingsContext();
+  const { isAdmin } = useAdminCheck();
 
   const [goal, setGoal] = useState(loadGoal);
   const [goalInput, setGoalInput] = useState("");
@@ -76,6 +78,16 @@ const MainLayout = () => {
             </div>
           </motion.div>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/admin")}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Shield className="h-4 w-4" />
+              </Button>
+            )}
             <SetBudgetDialog currentBudget={budget} onSetBudget={setBudget} />
             <Button
               variant="ghost"
