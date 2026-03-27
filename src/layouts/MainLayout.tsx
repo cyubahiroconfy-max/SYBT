@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { PiggyBank, Wallet, Receipt, Target, Sun, Moon, LogOut } from "lucide-react";
+import { PiggyBank, Wallet, Receipt, Target, Sun, Moon, LogOut, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavLink } from "@/components/NavLink";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { DashboardCards } from "@/components/DashboardCards";
 import { SavingsProgress } from "@/components/SavingsProgress";
 import { SetBudgetDialog } from "@/components/SetBudgetDialog";
