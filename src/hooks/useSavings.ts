@@ -17,7 +17,7 @@ export function useSavings() {
       const [savingsRes, expensesRes, budgetRes] = await Promise.all([
         supabase.from("savings").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("expenses").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("budgets").select("*").eq("user_id", user.id).single(),
+        supabase.from("budgets").select("*").eq("user_id", user.id).maybeSingle(),
       ]);
 
       if (savingsRes.data) {
