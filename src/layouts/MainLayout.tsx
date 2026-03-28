@@ -58,14 +58,14 @@ const MainLayout = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-primary px-4 py-4 shadow-md">
+      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary via-primary/95 to-primary/90 px-4 py-4 shadow-lg shadow-primary/20">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3"
           >
-            <div className="bg-primary-foreground/20 p-2 rounded-xl">
+            <div className="bg-primary-foreground/20 backdrop-blur-sm p-2.5 rounded-xl">
               <PiggyBank className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
