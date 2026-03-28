@@ -109,29 +109,18 @@ const AuthPage = () => {
           password,
         });
       } else if (signInMethod === "username") {
-        // Look up email by username from profiles table
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("username", loginIdentifier)
-          .maybeSingle();
+        // Look up email via edge function
+        const { data: lookupData, error: lookupError } = await supabase.functions.invoke(
+          "lookup-email-by-username",
+          { body: { username: loginIdentifier } }
+        );
 
-        if (profileError || !profile) {
-          throw new Error("Username not found");
-        }
-
-        // Get user email from auth - we need to try signing in with the user id
-        // Since we can't get email from profiles, we'll use a workaround:
-        // Try to find their email by looking at the user metadata
-        const { data: userData } = await supabase.auth.admin?.getUserById?.(profile.id) || {};
-        
-        // Fallback: ask user to use email or phone instead
-        if (!userData) {
-          throw new Error("Please sign in with your email or phone number associated with this username");
+        if (lookupError || !lookupData?.email) {
+          throw new Error(lookupData?.error || "Username not found");
         }
 
         result = await supabase.auth.signInWithPassword({
-          email: (userData as any).email,
+          email: lookupData.email,
           password,
         });
       } else {
