@@ -14,6 +14,7 @@ import HistoryPage from "@/pages/HistoryPage";
 import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminSetupPage from "@/pages/AdminSetupPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<AdminUsers />} />
           </Route>
+          <Route path="/admin-setup" element={<AdminSetupPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

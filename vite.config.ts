@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { adminSetupPlugin } from "./admin-setup-plugin";
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -11,7 +12,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react()],
+  plugins: [react(), adminSetupPlugin()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

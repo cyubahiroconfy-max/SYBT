@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PiggyBank, Mail, Phone, User, Lock, Eye, EyeOff,
-  Sparkles, TrendingUp, Shield, ArrowRight, CheckCircle,
+  Sparkles, TrendingUp, Shield, ArrowRight, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,35 +38,30 @@ const AuthPage = () => {
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [otp, setOtp] = useState("");
+  const [resending, setResending] = useState(false);
+  const [emailOtp, setEmailOtp] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
 
   const resetForm = () => {
     setSignUpStep("form");
-    setOtp("");
+    setEmailOtp("");
+    setPhoneOtp("");
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // Sign up with email (required for email verification)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        phone,
-        options: {
-          data: { username },
-        },
+        options: { data: { username } },
       });
       if (error) throw error;
 
       if (data.user && !data.session) {
         setSignUpStep("verify-email");
-        toast.success(
-          "Account created! Check your email for a verification link.",
-          { duration: 6000 }
-        );
+        toast.success("Account created! Check your email for a 6-digit code.", { duration: 6000 });
       } else {
         toast.success("Account created! You're now signed in.");
         navigate("/");
@@ -78,47 +73,90 @@ const AuthPage = () => {
     }
   };
 
+  const handleVerifyEmailOtp = async () => {
+    if (emailOtp.length < 6) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: emailOtp,
+        type: "signup",
+      });
+      if (error) throw error;
+
+      if (phone) {
+        const { error: smsError } = await supabase.auth.updateUser({ phone });
+        if (!smsError) {
+          setSignUpStep("verify-phone");
+          toast.success("Email verified! Now verify your phone number.");
+          return;
+        }
+      }
+      toast.success("Email verified! Welcome to Smart Youth Budget Tracker.");
+      navigate("/");
+    } catch (err: any) {
+      toast.error(err.message || "Invalid code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) throw error;
+      toast.success("Verification code resent to your email.");
+      setEmailOtp("");
+    } catch (err: any) {
+      toast.error(err.message || "Could not resend email.");
+    } finally {
+      setResending(false);
+    }
+  };
+
   const handleVerifyPhoneOtp = async () => {
+    if (phoneOtp.length < 6) return;
     setLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
         phone,
-        token: otp,
+        token: phoneOtp,
         type: "sms",
       });
       if (error) throw error;
       toast.success("Phone verified! You're all set.");
       navigate("/");
     } catch (err: any) {
-      toast.error(err.message || "OTP verification failed");
+      toast.error(err.message || "Invalid code. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSkipPhone = () => {
+    toast.success("Welcome to Smart Youth Budget Tracker!");
+    navigate("/");
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       let result;
-
       if (signInMethod === "phone") {
         result = await supabase.auth.signInWithPassword({
           phone: loginIdentifier,
           password,
         });
       } else if (signInMethod === "username") {
-        // Look up email via edge function
         const { data: lookupData, error: lookupError } = await supabase.functions.invoke(
           "lookup-email-by-username",
           { body: { username: loginIdentifier } }
         );
-
         if (lookupError || !lookupData?.email) {
           throw new Error(lookupData?.error || "Username not found");
         }
-
         result = await supabase.auth.signInWithPassword({
           email: lookupData.email,
           password,
@@ -129,7 +167,6 @@ const AuthPage = () => {
           password,
         });
       }
-
       if (result?.error) throw result.error;
       toast.success("Welcome back!");
       navigate("/");
@@ -140,162 +177,184 @@ const AuthPage = () => {
     }
   };
 
-  const renderSignUpForm = () => {
-    if (signUpStep === "verify-email") {
-      return (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4"
-        >
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <CheckCircle className="h-8 w-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground">Check your email</h3>
-          <p className="text-sm text-muted-foreground">
-            We sent a verification link to <strong className="text-foreground">{email}</strong>.
-            Click the link to verify your account.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            After verifying your email, come back and sign in.
-          </p>
-          <Button
-            variant="outline"
-            className="w-full rounded-xl"
-            onClick={() => {
-              resetForm();
-              setMode("signin");
-            }}
-          >
-            Go to Sign In
-          </Button>
-        </motion.div>
-      );
-    }
+  const Spinner = () => (
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full"
+    />
+  );
 
-    if (signUpStep === "verify-phone") {
-      return (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
-              <Phone className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">Verify your phone</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Enter the 6-digit code sent to <strong className="text-foreground">{phone}</strong>
-            </p>
-          </div>
-          <div className="flex justify-center">
-            <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-          <Button
-            className="w-full h-12 rounded-xl text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20"
-            disabled={loading || otp.length < 6}
-            onClick={handleVerifyPhoneOtp}
-          >
-            {loading ? (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full"
-              />
-            ) : (
-              "Verify Phone"
-            )}
-          </Button>
-        </motion.div>
-      );
-    }
-
-    return (
-      <motion.form
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.2 }}
-        onSubmit={handleSignUp}
-        className="space-y-4"
-      >
-        <div className="space-y-2">
-          <Label htmlFor="username" className="text-sm font-semibold">Username</Label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input id="username" placeholder="Choose a username" value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="pl-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors" required />
-          </div>
+  const renderVerifyEmail = () => (
+    <motion.div
+      key="verify-email"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="space-y-5"
+    >
+      <div className="text-center">
+        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+          <Mail className="h-8 w-8 text-primary" />
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="signup-email" className="text-sm font-semibold">Email</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input id="signup-email" type="email" placeholder="you@example.com" value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors" required />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="signup-phone" className="text-sm font-semibold">Phone Number</Label>
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input id="signup-phone" type="tel" placeholder="+250 7XX XXX XXX" value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="pl-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors" required />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="signup-password" className="text-sm font-semibold">Password</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input id="signup-password" type={showPassword ? "text" : "password"}
-              placeholder="••••••••" value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors"
-              required minLength={6} />
-            <button type="button" onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        <Button type="submit"
-          className="w-full h-12 rounded-xl text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all"
-          disabled={loading}>
-          {loading ? (
-            <motion.div animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full" />
-          ) : (
-            <>Create Account <ArrowRight className="h-4 w-4" /></>
-          )}
-        </Button>
-
-        <p className="text-xs text-muted-foreground text-center">
-          📧 You'll verify via email after signing up
+        <h3 className="text-lg font-semibold text-foreground">Verify your email</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
         </p>
-      </motion.form>
-    );
-  };
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-sm font-semibold">Verification Code</Label>
+        <div className="flex justify-center pt-1">
+          <InputOTP maxLength={6} value={emailOtp} onChange={setEmailOtp}>
+            <InputOTPGroup>
+              {[0,1,2,3,4,5].map(i => <InputOTPSlot key={i} index={i} />)}
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
+      </div>
+
+      <Button
+        className="w-full h-12 rounded-xl text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20"
+        disabled={loading || emailOtp.length < 6}
+        onClick={handleVerifyEmailOtp}
+      >
+        {loading ? <Spinner /> : <>Verify Email <ArrowRight className="h-4 w-4" /></>}
+      </Button>
+
+      <div className="text-center space-y-2">
+        <p className="text-xs text-muted-foreground">Didn't receive the code?</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-primary gap-1.5"
+          disabled={resending}
+          onClick={handleResendEmail}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${resending ? "animate-spin" : ""}`} />
+          {resending ? "Sending..." : "Resend code"}
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center bg-muted/60 rounded-lg px-3 py-2">
+        Make sure to check your spam folder. The code expires in 60 minutes.
+      </p>
+    </motion.div>
+  );
+
+  const renderVerifyPhone = () => (
+    <motion.div
+      key="verify-phone"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="space-y-5"
+    >
+      <div className="text-center">
+        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+          <Phone className="h-8 w-8 text-primary" />
+        </div>
+        <h3 className="text-lg font-semibold text-foreground">Verify your phone</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Enter the 6-digit code sent to <strong className="text-foreground">{phone}</strong>
+        </p>
+      </div>
+
+      <div className="flex justify-center">
+        <InputOTP maxLength={6} value={phoneOtp} onChange={setPhoneOtp}>
+          <InputOTPGroup>
+            {[0,1,2,3,4,5].map(i => <InputOTPSlot key={i} index={i} />)}
+          </InputOTPGroup>
+        </InputOTP>
+      </div>
+
+      <Button
+        className="w-full h-12 rounded-xl text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20"
+        disabled={loading || phoneOtp.length < 6}
+        onClick={handleVerifyPhoneOtp}
+      >
+        {loading ? <Spinner /> : <>Verify Phone <ArrowRight className="h-4 w-4" /></>}
+      </Button>
+
+      <Button variant="outline" className="w-full rounded-xl" onClick={handleSkipPhone}>
+        Skip for now
+      </Button>
+    </motion.div>
+  );
+
+  const renderSignUpForm = () => (
+    <motion.form
+      key="signup-form"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.2 }}
+      onSubmit={handleSignUp}
+      className="space-y-4"
+    >
+      <div className="space-y-2">
+        <Label htmlFor="username" className="text-sm font-semibold">Username</Label>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input id="username" placeholder="Choose a username" value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="pl-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors" required />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-email" className="text-sm font-semibold">Email</Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input id="signup-email" type="email" placeholder="you@example.com" value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pl-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors" required />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-phone" className="text-sm font-semibold">
+          Phone Number <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input id="signup-phone" type="tel" placeholder="+250 7XX XXX XXX" value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="pl-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-password" className="text-sm font-semibold">Password</Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input id="signup-password" type={showPassword ? "text" : "password"}
+            placeholder="At least 6 characters" value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="pl-10 pr-10 h-12 rounded-xl bg-muted/50 border-border focus:bg-background transition-colors"
+            required minLength={6} />
+          <button type="button" onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      <Button type="submit"
+        className="w-full h-12 rounded-xl text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all"
+        disabled={loading}>
+        {loading ? <Spinner /> : <>Create Account <ArrowRight className="h-4 w-4" /></>}
+      </Button>
+
+      <p className="text-xs text-muted-foreground text-center">
+        You'll verify your email with a 6-digit code after signing up
+      </p>
+    </motion.form>
+  );
 
   const renderSignInForm = () => (
     <motion.form
+      key="signin-form"
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
@@ -303,7 +362,6 @@ const AuthPage = () => {
       onSubmit={handleSignIn}
       className="space-y-4"
     >
-      {/* Sign-in method selector */}
       <div className="flex gap-1 bg-muted rounded-xl p-1">
         {([
           { key: "email" as SignInMethod, icon: Mail, label: "Email" },
@@ -313,9 +371,7 @@ const AuthPage = () => {
           <button key={m.key} type="button"
             onClick={() => setSignInMethod(m.key)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg transition-all ${
-              signInMethod === m.key
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "text-muted-foreground hover:text-foreground"
+              signInMethod === m.key ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
             }`}>
             <m.icon className="h-3.5 w-3.5" />
             {m.label}
@@ -368,20 +424,22 @@ const AuthPage = () => {
       <Button type="submit"
         className="w-full h-12 rounded-xl text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all"
         disabled={loading}>
-        {loading ? (
-          <motion.div animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full" />
-        ) : (
-          <>Sign In <ArrowRight className="h-4 w-4" /></>
-        )}
+        {loading ? <Spinner /> : <>Sign In <ArrowRight className="h-4 w-4" /></>}
       </Button>
     </motion.form>
   );
 
+  const renderContent = () => {
+    if (mode === "signup") {
+      if (signUpStep === "verify-email") return renderVerifyEmail();
+      if (signUpStep === "verify-phone") return renderVerifyPhone();
+      return renderSignUpForm();
+    }
+    return renderSignInForm();
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
-      {/* Left panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-accent relative overflow-hidden items-center justify-center p-12">
         <div className="absolute inset-0 opacity-10">
           {[...Array(6)].map((_, i) => (
@@ -416,45 +474,47 @@ const AuthPage = () => {
         </div>
       </div>
 
-      {/* Right panel - Auth form */}
       <div className="flex-1 flex items-center justify-center px-4 py-8 lg:py-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-          {/* Mobile branding */}
           <div className="text-center mb-8 lg:hidden">
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }}
               className="inline-flex items-center justify-center bg-gradient-to-br from-primary to-accent p-4 rounded-2xl mb-4 shadow-lg">
               <PiggyBank className="h-10 w-10 text-primary-foreground" />
             </motion.div>
             <h1 className="text-2xl font-display font-bold text-foreground">Smart Youth Budget Tracker</h1>
-            <p className="text-sm text-muted-foreground mt-1">Save smart, spend wise 💰</p>
+            <p className="text-sm text-muted-foreground mt-1">Save smart, spend wise</p>
           </div>
 
-          {/* Desktop heading */}
           <div className="hidden lg:block mb-8">
             <h2 className="text-3xl font-display font-bold text-foreground">
-              {mode === "signin" ? "Welcome back!" : "Get started"}
+              {mode === "signin" ? "Welcome back!" : signUpStep === "form" ? "Get started" : "Verify your account"}
             </h2>
             <p className="text-muted-foreground mt-2">
-              {mode === "signin" ? "Sign in to continue managing your finances" : "Create your free account to start budgeting"}
+              {mode === "signin"
+                ? "Sign in to continue managing your finances"
+                : signUpStep === "form"
+                ? "Create your free account to start budgeting"
+                : "One last step to secure your account"}
             </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-xl shadow-primary/5">
-            {/* Mode toggle */}
-            <div className="flex bg-muted rounded-xl p-1 mb-6">
-              {(["signin", "signup"] as AuthMode[]).map((m) => (
-                <button key={m} type="button"
-                  onClick={() => { setMode(m); resetForm(); }}
-                  className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-                    mode === m ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
-                  }`}>
-                  {m === "signin" ? "Sign In" : "Sign Up"}
-                </button>
-              ))}
-            </div>
+            {signUpStep === "form" && (
+              <div className="flex bg-muted rounded-xl p-1 mb-6">
+                {(["signin", "signup"] as AuthMode[]).map((m) => (
+                  <button key={m} type="button"
+                    onClick={() => { setMode(m); resetForm(); }}
+                    className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                      mode === m ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
+                    }`}>
+                    {m === "signin" ? "Sign In" : "Sign Up"}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <AnimatePresence mode="wait">
-              {mode === "signup" ? renderSignUpForm() : renderSignInForm()}
+              {renderContent()}
             </AnimatePresence>
           </div>
 
